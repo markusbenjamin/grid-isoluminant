@@ -1,5 +1,6 @@
-var stimDrawBuffer;
+var hgLayer, breakupLayer, stimLayer;
 var stimSize;
+var stimArray;
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
@@ -11,15 +12,33 @@ function setup() {
 
 function initialize() {
   colorMode(HSB, 1);
-  rectMode(CENTER)
+  rectMode(CENTER);
   noFill();
   noStroke();
 
-  stimDrawBuffer = createGraphics(stimSize, stimSize);
-  stimDrawBuffer.background(0.5);
-  drawHermannGridToBuffer(7, 1 / 3, stimSize, color(1), color(1), stimSize * 0.5, stimSize * 0.5, true, stimDrawBuffer);
-  //pass main renderer as argument?
-  //get pixel array from stimDrawBuffer, draw isoluminant layer, get that array, overlap
+  hgLayer = createGraphics(stimSize, stimSize);
+  hgLayer.colorMode(HSB, 1);
+  hgLayer.rectMode(CENTER);
+  hgLayer.background(0.5);
+  drawHermannGridToBuffer(7, 1 / 3, stimSize, color(1), color(1), stimSize * 0.5, stimSize * 0.5, true, hgLayer);
+  hgLayer.loadPixels();
+
+  breakupLayer = createGraphics(stimSize, stimSize);
+  breakupLayer.colorMode(HSB, 1);
+  breakupLayer.rectMode(CENTER);
+  breakupLayer.background(1);
+  breakupLayer.fill(0);
+  breakupLayer.noStroke();
+  breakupLayer.rect(stimSize * 0.5, stimSize * 0.5, stimSize * 0.25, stimSize * 0.25);
+  breakupLayer.loadPixels();
+
+  stimArray = [];
+  for(var i=0; i<stimSize; i++){
+    stimArray[i] = [];
+    for(var j=0; j<stimSize; j++){
+      stimArray[i][j] = round(hgLayer.pixels[i+stimSize*j]/255);
+    }
+  }
 }
 
 function windowResized() {
@@ -29,12 +48,12 @@ function windowResized() {
 }
 
 function calculateSizes() {
-  stimSize = min(width, height) * 0.75;
+  stimSize = round(min(width, height) * 0.05);
 }
 
 function draw() {
   background(0.5);
-  image(stimDrawBuffer, 100, 100);
+  image(hgLayer, 100, 100);
 }
 
 function drawHermannGridToBuffer(n, r, gS, vC, hC, x, y, hOnV, buffer) {
