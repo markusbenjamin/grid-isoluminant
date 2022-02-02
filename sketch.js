@@ -88,16 +88,24 @@ function windowResized() {
 }
 
 function calculateSizes() {
-  stimSize = round(min(width, height) * 0.33);
+  stimSize = round(min(width, height) * 0.5);
 }
 
 function draw() {
   background(0.5);
-  image(hgLayer, 100, 100 + stimSize);
-  image(buLayer, 100 + stimSize, 100);
-  image(stimLayer, 100 + stimSize, 100 + stimSize);
+  hgLayer.colorMode(HSB, 1, 1, 1, 1);
+  hgLayer.background(1);
+  var h = 1 / 3;
+  streetCol = color(h, 1, 1, 1);
+  blockCol = rgb2hsb(isoluminantRGBfixRG(hsb2rgb([h, 1, 1]), mouseX / width, mouseY / height));
+  drawHermannGridToBuffer(7, 1 / 3, stimSize, blockCol, streetCol, streetCol, stimSize * 0.5, stimSize * 0.5, true, hgLayer);
 
-  var h = 1/3;
+  image(hgLayer, width * 0.5 - stimSize * 0.5, height * 0.5 - stimSize * 0.5);
+  //image(hgLayer, 100, 100 + stimSize);
+  //image(buLayer, 100 + stimSize, 100);
+  //image(stimLayer, 100 + stimSize, 100 + stimSize);
+
+  /*var h = 1/3;
   fill(color(h, 1, 1, 1));
   ellipse(width * 0.4, height * 0.5, 200, 200);
 
@@ -107,7 +115,7 @@ function draw() {
 
   var isoluminantColorArray = rgb2hsb(isoluminantRGBfixRG(hsb2rgb([h, 1, 1]), mouseX/width, mouseY/height));
   fill(color(isoluminantColorArray[0],  isoluminantColorArray[1], isoluminantColorArray[2]));
-  ellipse(width * 0.4 + 500, height * 0.5, 200, 200);
+  ellipse(width * 0.4 + 500, height * 0.5, 200, 200);*/
 }
 
 function rgb2hsb(rgbArray) {
