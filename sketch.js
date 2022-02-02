@@ -13,7 +13,7 @@ function setup() {
 }
 
 function initialize() {
-  colorMode(HSB, 1);
+  colorMode(HSB, 1, 1, 1, 1);
   rectMode(CENTER);
   noFill();
   noStroke();
@@ -97,11 +97,17 @@ function draw() {
   image(buLayer, 100 + stimSize, 100);
   image(stimLayer, 100 + stimSize, 100 + stimSize);
 
-  /*var r = 0;
-  var g = 1;
-  var b = 0;
-  fill(color(r, g, b));
-  ellipse(3 * 100 + 2 * stimSize, 100 + stimSize, 200, 200);*/
+  var h = 1 / 3;
+  fill(color(h, 1, 1, 1));
+  ellipse(width * 0.4, height * 0.5, 200, 200);
+
+  var recoveredColorArray = rgb2hsb(hsb2rgb([h, 1, 1]));
+  fill(color(recoveredColorArray[0], recoveredColorArray[1], recoveredColorArray[2]));
+  ellipse(width * 0.4 + 250, height * 0.5, 200, 200);
+
+  var isoluminantColorArray = rgb2hsb(isoluminantRGBfixRG(hsb2rgb([h, 1, 1]),1,1));
+  fill(color(isoluminantColorArray[0], isoluminantColorArray[1], isoluminantColorArray[2]));
+  ellipse(width * 0.4 + 500, height * 0.5, 200, 200);
 }
 
 function rgb2hsb(rgbArray) {
@@ -116,7 +122,7 @@ function rgb2hsb(rgbArray) {
     saturation([r, g, b, a]) / 100,
     brightness([r, g, b, a])
   ]
-  colorMode(HSB, 1);
+  colorMode(HSB, 1, 1, 1, 1);
   return hsbArray;
 }
 
@@ -131,11 +137,14 @@ function hsb2rgb(hsbArray) {
     blue([h, s, b]) / 255,
     1
   ]
-  colorMode(HSB, 1);
+  colorMode(HSB, 1, 1, 1, 1);
   return rgbArray;
 }
 
-function isoluminantRGBfixRG(r1, g1, b1, r2, g2) {
+function isoluminantRGBfixRG(rgbArray1, r2, g2) {
+  var r1 = rgbArray1[0];
+  var g1 = rgbArray1[1];
+  var b1 = rgbArray1[2];
   return [
     r2,
     g2,
@@ -144,7 +153,10 @@ function isoluminantRGBfixRG(r1, g1, b1, r2, g2) {
   ]
 }
 
-function isoluminantRGBfixRB(r1, g1, b1, r2, b2) {
+function isoluminantRGBfixRB(rgbArray1, r2, b2) {
+  var r1 = rgbArray1[0];
+  var g1 = rgbArray1[1];
+  var b1 = rgbArray1[2];
   return [
     r2,
     -1.6778523489932886 * (-0.211 * b1 + 0.211 * b2 - 0.596 * g1 - 0.299 * r1 + 0.299 * r2),
@@ -154,7 +166,10 @@ function isoluminantRGBfixRB(r1, g1, b1, r2, b2) {
 
 }
 
-function isoluminantRGBfixGB(r1, g1, b1, g2, b2) {
+function isoluminantRGBfixGB(rgbArray1, g2, b2) {
+  var r1 = rgbArray1[0];
+  var g1 = rgbArray1[1];
+  var b1 = rgbArray1[2];
   return [
     -3.3444816053511706 * (-0.211 * b1 + 0.211 * b2 - 0.596 * g1 + 0.596 * g2 - 0.299 * r1),
     g2,
