@@ -97,7 +97,7 @@ function draw() {
   image(buLayer, 100 + stimSize, 100);
   image(stimLayer, 100 + stimSize, 100 + stimSize);
 
-  var h = 1 / 3;
+  var h = 1/3;
   fill(color(h, 1, 1, 1));
   ellipse(width * 0.4, height * 0.5, 200, 200);
 
@@ -105,8 +105,8 @@ function draw() {
   fill(color(recoveredColorArray[0], recoveredColorArray[1], recoveredColorArray[2]));
   ellipse(width * 0.4 + 250, height * 0.5, 200, 200);
 
-  var isoluminantColorArray = rgb2hsb(isoluminantRGBfixRG(hsb2rgb([h, 1, 1]),1,1));
-  fill(color(isoluminantColorArray[0], isoluminantColorArray[1], isoluminantColorArray[2]));
+  var isoluminantColorArray = rgb2hsb(isoluminantRGBfixRG(hsb2rgb([h, 1, 1]), mouseX/width, mouseY/height));
+  fill(color(isoluminantColorArray[0],  isoluminantColorArray[1], isoluminantColorArray[2]));
   ellipse(width * 0.4 + 500, height * 0.5, 200, 200);
 }
 
@@ -145,37 +145,24 @@ function isoluminantRGBfixRG(rgbArray1, r2, g2) {
   var r1 = rgbArray1[0];
   var g1 = rgbArray1[1];
   var b1 = rgbArray1[2];
-  return [
-    r2,
-    g2,
-    -4.739336492890995 * (-0.211 * b1 - 0.596 * g1 + 0.596 * g2 - 0.299 * r1 + 0.299 * r2),
-    1
-  ]
+  var b2 = -4.739336492890995 * (-0.211 * b1 - 0.596 * g1 + 0.596 * g2 - 0.299 * r1 + 0.299 * r2);
+  if (0 <= b2 <= 1) { return [r2, g2, b2, 1] } else { return [1, 0, 0, 1] }
 }
 
 function isoluminantRGBfixRB(rgbArray1, r2, b2) {
   var r1 = rgbArray1[0];
   var g1 = rgbArray1[1];
   var b1 = rgbArray1[2];
-  return [
-    r2,
-    -1.6778523489932886 * (-0.211 * b1 + 0.211 * b2 - 0.596 * g1 - 0.299 * r1 + 0.299 * r2),
-    b2,
-    1
-  ]
-
+  var g2 = -1.6778523489932886 * (-0.211 * b1 + 0.211 * b2 - 0.596 * g1 - 0.299 * r1 + 0.299 * r2);
+  if (0 <= g2 <= 1) { return [r2, g2, b2, 1] } else { return [1, 0, 0, 1] }
 }
 
 function isoluminantRGBfixGB(rgbArray1, g2, b2) {
   var r1 = rgbArray1[0];
   var g1 = rgbArray1[1];
   var b1 = rgbArray1[2];
-  return [
-    -3.3444816053511706 * (-0.211 * b1 + 0.211 * b2 - 0.596 * g1 + 0.596 * g2 - 0.299 * r1),
-    g2,
-    b2,
-    1
-  ]
+  var r2 = -3.3444816053511706 * (-0.211 * b1 + 0.211 * b2 - 0.596 * g1 + 0.596 * g2 - 0.299 * r1);
+  if (0 <= r2 <= 1) { return [r2, g2, b2, 1] } else { return [1, 0, 0, 1] }
 }
 
 function drawHermannGridToBuffer(n, r, gS, bC, vC, hC, x, y, hOnV, buffer) {
