@@ -1,5 +1,4 @@
-var hgLayer, buLayer, stimLayer;
-var hgArray, breakupArray, stimArray;
+var hgLayer, buLayer, stimLayer, wireframeLayer;
 var stimSize;
 var s1, s2, b1, b2;
 var colorChangeMode;
@@ -29,6 +28,11 @@ function initialize() {
   buLayer.noSmooth();
   buLayer.rectMode(CENTER);
 
+  wireframeLayer = createGraphics(stimSize, stimSize);
+  wireframeLayer.colorMode(RGB, 1);
+  wireframeLayer.noSmooth();
+  wireframeLayer.rectMode(CENTER);
+
   stimLayer = createGraphics(stimSize, stimSize);
   stimLayer.colorMode(RGB, 1);
   stimLayer.noSmooth();
@@ -39,6 +43,35 @@ function initialize() {
   b1 = color(0);
   b2 = color(0);
   colorChangeMode = 0;
+
+  hgLayer.background(1);
+  drawHermannGridToBuffer(7, 1 / 3, stimSize, color(0), color(1), color(1), stimSize * 0.5, stimSize * 0.5, true, hgLayer);
+  hgLayer.loadPixels();
+
+  buLayer.background(1);
+  buLayer.fill(0);
+  buLayer.rect(stimSize * 0.5, stimSize * 0.5, stimSize * 0.5, stimSize * 0.5);
+  buLayer.loadPixels();
+
+  wireframeLayer.background(0.5);
+  var hgEdges = edgedetection(hgLayer);
+  for (var i = 0; i < hgEdges.length; i++) {
+    for (var j = 0; j < hgEdges[i].length; j++) {
+      if (hgEdges[i][j] != 0.5) {
+        wireframeLayer.set(i, j, color(0, 1, 1));
+      }
+    }
+  }
+  wireframeLayer.updatePixels();
+  var buEdges = edgedetection(buLayer);
+  for (var i = 0; i < buEdges.length; i++) {
+    for (var j = 0; j < buEdges[i].length; j++) {
+      if (buEdges[i][j] != 0.5) {
+        wireframeLayer.set(i, j, color(1 / 3, 1, 1));
+      }
+    }
+  }
+  wireframeLayer.updatePixels();
 }
 
 function windowResized() {
@@ -49,26 +82,15 @@ function windowResized() {
 }
 
 function calculateSizes() {
-  stimSize = round(min(width, height) * 0.3);
+  stimSize = round(min(width, height) * 0.45);
 }
 
 function draw() {
   background(0.5);
-
-  hgLayer.background(1);
-  drawHermannGridToBuffer(7, 1 / 3, stimSize, color(0), color(1), color(1), stimSize * 0.5, stimSize * 0.5, true, hgLayer);
-  hgLayer.loadPixels();
-
-  buLayer.background(1);
-  buLayer.fill(0);
-  buLayer.noStroke();
-  buLayer.rect(stimSize * 0.5, stimSize * 0.5, stimSize * 0.5, stimSize * 0.5);
-  buLayer.loadPixels();
-
   stimLayer.background(0.5);
 
-  //street color isoluminant variants
   if (colorChangeMode == 1) {
+    //street color isoluminant variants
     var s = 1 / 3;
 
     var r2fix = 0.2;
@@ -95,7 +117,6 @@ function draw() {
     noStroke();
   }
   else if (colorChangeMode == 2) {
-
     //block color isoluminant variants
     var b = 2 / 3;
 
@@ -148,9 +169,10 @@ function draw() {
   }
   stimLayer.updatePixels();
 
-  image(hgLayer, width * 0.5 - stimSize * 0.5, height * 0.5 - stimSize * 0.5 - stimSize);
-  image(buLayer, width * 0.5 - stimSize * 0.5 - stimSize, height * 0.5 - stimSize * 0.5);
-  image(stimLayer, width * 0.5 - stimSize * 0.5, height * 0.5 - stimSize * 0.5);
+  image(buLayer, width * 0.5, height * 0.5 - stimSize);
+  image(wireframeLayer, width * 0.5 - stimSize, height * 0.5 - stimSize);
+  image(hgLayer, width * 0.5 - stimSize, height * 0.5);
+  image(stimLayer, width * 0.5, height * 0.5);
 }
 
 function keyPressed() {
@@ -161,8 +183,77 @@ function keyPressed() {
 
   if (key == 'e' || key == 'E') {
     loadPixels();
-    get(width * 0.5 - stimSize * 0.5 - stimSize, height * 0.5 - stimSize * 0.5 - stimSize, stimSize * 2, stimSize * 2).save("isoluminant_stimulus", "png")
+    get(width * 0.5 - stimSize, height * 0.5 - stimSize, stimSize * 2, stimSize * 2).save("isoluminant_stimulus", "png")
   }
+}
+
+function edgedetection(buffer) {
+  var convolvedX = convolve(pixelArrax2imageArray(buffer), [[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]]);
+  var convolvedY = convolve(pixelArrax2imageArray(buffer), [[-1, -2, -1], [0, 0, 0], [1, 2, 1]]);
+
+  var edgeArray = [];
+  for (var i = 0; i < convolvedX.length; i++) {
+    edgeArray[i] = [];
+    for (var j = 0; j < convolvedY.length; j++) {
+      if ((convolvedX[i][j] + convolvedY[i][j]) / 2 != 0.5) {
+        edgeArray[i][j] = 1;
+      }
+      else {
+        edgeArray[i][j] = 0.5;
+      }
+    }
+  }
+
+  return edgeArray;
+}
+
+function pixelArrax2imageArray(buffer) {
+  buffer.loadPixels();
+  var imageArray = [];
+
+  for (var i = 0; i < buffer.width; i++) {
+    imageArray[i] = [];
+    for (var j = 0; j < buffer.width; j++) {
+      imageArray[i][j] = round(buffer.pixels[4 * (i + buffer.width * j) + 0] / 255);
+    }
+  }
+
+  return imageArray;
+}
+
+function convolve(imageArray, convolutionArray) {
+  var convolved = [];
+
+  var maxSum = 1;
+  var minSum = 0;
+  for (var i = 1; i < imageArray.length - 1; i++) {
+    convolved[i - 1] = [];
+    for (var j = 1; j < imageArray[i].length - 1; j++) {
+      var sum = 0;
+      for (var k = 0; k < 3; k++) {
+        for (var l = 0; l < 3; l++) {
+          sum += imageArray[i + k - 1][j + l - 1] * convolutionArray[k][l];
+        }
+      }
+      convolved[i - 1][j - 1] = sum;
+      if (maxSum < sum) {
+        maxSum = sum;
+      }
+      if (sum < minSum) {
+        minSum = sum;
+      }
+    }
+  }
+
+  var normalized = [];
+  for (var i = 0; i < convolved.length; i++) {
+    normalized[i] = [];
+    for (var j = 0; j < convolved[i].length; j++) {
+      normalized[i][j] = map(convolved[i][j], minSum, maxSum, 0, 1);
+    }
+  }
+
+  return normalized;
 }
 
 function rgb2hsb(rgbArray) {
@@ -258,6 +349,7 @@ function drawHermannGridToBuffer(n, r, gS, bC, vC, hC, x, y, hOnV, buffer) {
       buffer.endShape(CLOSE);
     }
   }
+
 
   buffer.fill(hC);
   buffer.stroke(hC);
