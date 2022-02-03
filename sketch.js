@@ -1,10 +1,21 @@
-var hgLayer, buLayer, stimLayer, wireframeLayer;
+var hgLayer, buLayer, isoLayer, noisoLayer, wireframeLayer;
 var stimSize;
 var s1, s2, b1, b2;
 var colorChangeMode;
+var base;
+
+function preload() {
+  base = loadImage("/base_11.png");
+}
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
+
+  s1 = color(1);
+  s2 = color(1);
+  b1 = color(0);
+  b2 = color(0);
+  colorChangeMode = 0;
 
   calculateSizes();
   initialize();
@@ -33,25 +44,26 @@ function initialize() {
   wireframeLayer.noSmooth();
   wireframeLayer.rectMode(CENTER);
 
-  stimLayer = createGraphics(stimSize, stimSize);
-  stimLayer.colorMode(RGB, 1);
-  stimLayer.noSmooth();
-  stimLayer.rectMode(CENTER);
+  isoLayer = createGraphics(stimSize, stimSize);
+  isoLayer.colorMode(RGB, 1);
+  isoLayer.noSmooth();
+  isoLayer.rectMode(CENTER);
 
-  s1 = color(1);
-  s2 = color(1);
-  b1 = color(0);
-  b2 = color(0);
-  colorChangeMode = 0;
+  noisoLayer = createGraphics(stimSize, stimSize);
+  noisoLayer.colorMode(RGB, 1);
+  noisoLayer.noSmooth();
+  noisoLayer.rectMode(CENTER);
 
   hgLayer.background(1);
   drawHermannGridToBuffer(7, 1 / 3, stimSize, color(0), color(1), color(1), stimSize * 0.5, stimSize * 0.5, true, hgLayer);
   hgLayer.loadPixels();
+  buffer2BW(hgLayer);
 
   buLayer.background(1);
-  buLayer.fill(0);
-  buLayer.rect(stimSize * 0.5, stimSize * 0.5, stimSize * 0.5, stimSize * 0.5);
+  base.resize(stimSize, stimSize);
+  buLayer.image(base, 0, 0);
   buLayer.loadPixels();
+  buffer2BW(buLayer);
 
   wireframeLayer.background(0.5);
   var hgEdges = edgedetection(hgLayer);
@@ -87,23 +99,24 @@ function calculateSizes() {
 
 function draw() {
   background(0.5);
-  stimLayer.background(0.5);
+  isoLayer.background(0.5);
+  noisoLayer.background(0.5);
 
   if (colorChangeMode == 1) {
     //street color isoluminant variants
     var s = 1 / 3;
 
-    var r2fix = 0.2;
-    var g2fix = 0.2;
+    var r2fix = 0;
+    var b2fix = 0.2;
     var rgbArray = hsb2rgb([s, 1, 1]);
 
-    s1HSBArray = rgb2hsb(isoluminantRGBfixRG(rgbArray, mouseX / width, g2fix));
-    s2HSBArray = rgb2hsb(isoluminantRGBfixRG(rgbArray, r2fix, mouseY / height));
+    s1HSBArray = rgb2hsb(isoluminantRGBfixRB(rgbArray, mouseX / width, b2fix));
+    s2HSBArray = rgb2hsb(isoluminantRGBfixRB(rgbArray, r2fix, mouseY / height));
 
     s1 = color(s1HSBArray[0], s1HSBArray[1], s1HSBArray[2]);
     s2 = color(s2HSBArray[0], s2HSBArray[1], s2HSBArray[2]);
 
-    var controlLimits = isoluminantRGBfixRGControlLimits(rgbArray, r2fix, g2fix);
+    var controlLimits = isoluminantRGBfixRBControlLimits(rgbArray, r2fix, b2fix);
     var controlSquareCorners = [
       min(controlLimits[0], controlLimits[1]) * width,
       min(controlLimits[2], controlLimits[3]) * height,
@@ -118,7 +131,7 @@ function draw() {
   }
   else if (colorChangeMode == 2) {
     //block color isoluminant variants
-    var b = 2 / 3;
+    var b = 0;
 
     var r2fix = 0.2;
     var g2fix = 0.2;
@@ -150,29 +163,32 @@ function draw() {
       var rBU = buLayer.pixels[4 * (i + stimSize * j) + 0] / 255;
 
       if (round(rHG) == 0) {
-        if (round(rBU) == 0) {
-          stimLayer.set(i, j, b1);
+        if (round(rBU) == 0) { //breakup
+          isoLayer.set(i, j, b1);
         }
         else {
-          stimLayer.set(i, j, b2);
+          isoLayer.set(i, j, b2);
         }
+        noisoLayer.set(i, j, b2);
       }
       if (round(rHG) == 1) {
-        if (round(rBU) == 0) {
-          stimLayer.set(i, j, s1);
+        if (round(rBU) == 0) {//breakup
+          isoLayer.set(i, j, s1);
         }
         else {
-          stimLayer.set(i, j, s2);
+          isoLayer.set(i, j, s2);
         }
+        noisoLayer.set(i, j, s2);
       }
     }
   }
-  stimLayer.updatePixels();
+  isoLayer.updatePixels();
+  noisoLayer.updatePixels();
 
   image(buLayer, width * 0.5, height * 0.5 - stimSize);
   image(wireframeLayer, width * 0.5 - stimSize, height * 0.5 - stimSize);
-  image(hgLayer, width * 0.5 - stimSize, height * 0.5);
-  image(stimLayer, width * 0.5, height * 0.5);
+  image(noisoLayer, width * 0.5 - stimSize, height * 0.5);
+  image(isoLayer, width * 0.5, height * 0.5);
 }
 
 function keyPressed() {
@@ -185,6 +201,16 @@ function keyPressed() {
     loadPixels();
     get(width * 0.5 - stimSize, height * 0.5 - stimSize, stimSize * 2, stimSize * 2).save("isoluminant_stimulus", "png")
   }
+}
+
+function buffer2BW(buffer) {
+  for (var i = 0; i < buffer.width; i++) {
+    for (var j = 0; j < buffer.height; j++) {
+      var pixel = buffer.get(i, j);
+      buffer.set(i, j, color(ceil(pixel[0] / 255)));
+    }
+  }
+  buffer.updatePixels();
 }
 
 function edgedetection(buffer) {
@@ -296,6 +322,18 @@ function isoluminantRGBfixRGControlLimits(rgbArray1, r2, g2) {
     0.705686 * (b1 + 2.82464 * g1 - 2.82464 * g2 + 1.41706 * r1),
     0.354027 * (-1 + b1 + 2.82464 * g1 + 1.41706 * r1 - 1.41706 * r2),
     0.354027 * (b1 + 2.82464 * g1 + 1.41706 * r1 - 1.41706 * r2)
+  ]
+}
+
+function isoluminantRGBfixRBControlLimits(rgbArray1, r2, b2) {
+  var r1 = rgbArray1[0];
+  var g1 = rgbArray1[1];
+  var b1 = rgbArray1[2];
+  return [
+    1.99331 * (-1 + 0.354027 * b1 - 0.354027 * b2 + g1 + 0.501678 * r1),
+    1.99331 * (0.354027 * b1 - 0.354027 * b2 + g1 + 0.501678 * r1),
+    2.82464 * (-1 + 0.354027 * b1 + g1 + 0.501678 * r1 - 0.501678 * r2),
+    2.82464 * (0.354027 * b1 + g1 + 0.501678 * r1 - 0.501678 * r2)
   ]
 }
 
