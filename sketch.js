@@ -5,7 +5,7 @@ var colorChangeMode;
 var base;
 
 function preload() {
-  base = loadImage("/base_11.png");
+  base = loadImage("/base_5.png");
 }
 
 function setup() {
